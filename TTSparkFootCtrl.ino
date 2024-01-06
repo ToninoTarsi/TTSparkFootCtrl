@@ -13,6 +13,7 @@ NimBLEClient* pClient;
 NimBLERemoteService* pMidiService;
 NimBLERemoteCharacteristic* pMidiCharacteristic;
 void connetctFootCtrl();
+int mode = 0;
 
 class MyCallbacks : public NimBLEClientCallbacks {
     void onConnect(NimBLEClient* pClient) {
@@ -30,31 +31,56 @@ class MyCallbacks : public NimBLEClientCallbacks {
 
 void notifyCallback(NimBLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) {
     if (isNotify) {
-        Serial.print("Received MIDI Message: ");
+        
 
 
         int midi_chan, midi_cmd,midi_data; bool onoff;
-        midi_chan = (pData[3] & 0x0f) + 1;
-        midi_cmd = pData[2] & 0xf0;
-        midi_data = pData[3] & 0xf0;
-        onoff = (pData[2] == 127 ? true : false);        
+        
+        midi_cmd = pData[2] ;
+        midi_data = pData[3] ;
+         
+        Serial.print("Received MIDI Message: ");     
         for (size_t i = 0; i < length; i++) {
             Serial.print(pData[i], HEX);
             Serial.print(" ");
         }
         Serial.println();
 
-    if (midi_cmd == 0xc0)  {
-      switch (pData[3]) {
-        case 0:              change_hardware_preset(0);                 break; // MIDI Commander BIFX A
-        case 1:              change_hardware_preset(1);                 break; // MIDI Commander BIFX B
-        case 2:              change_hardware_preset(2);                 break; // MIDI Commander BIFX C
-        case 3:              change_hardware_preset(3);                 break; // MIDI Commander BIFX D
-      }
-    
+        if (midi_cmd == 0xC0)  {
+          mode = midi_data;
+          Serial.print("Switch to mode : ");
+          Serial.println(mode);
+        }
+        else if (midi_cmd == 0xB0) {
+          Serial.print("Switch to command : ");
+          Serial.println(midi_data);
+          if ( mode == 0) {
+            Serial.println("Execyuting mode 0");
+            switch (midi_data) {
+              case 0:              change_hardware_preset(0);Serial.println("change_hardware_preset 1");break;                 
+              case 1:              change_hardware_preset(1);Serial.println("change_hardware_preset 2");break;                  
+              case 2:              change_hardware_preset(2);Serial.println("change_hardware_preset 3");break;                
+              case 3:              change_hardware_preset(3);Serial.println("change_hardware_preset 4");break;                  
+            }
+          }
+          if ( mode == 1) {
+            switch (midi_data) {
+              case 0:              change_drive_toggle();Serial.println("change_drive_toggle 1");break;                       
+              case 1:              change_mod_toggle();Serial.println("change_mod_toggle 2");break;                          
+              case 2:              change_delay_toggle();Serial.println("change_delay_toggle 3");break;                     
+              case 3:              change_reverb_toggle();Serial.println("change_reverb_toggle 4");break;     
+            }               
+          }
+          if ( mode == 2) {
+            
+          }
+          if ( mode == 3) {
+            
+          }
+      
+       }
     }
-    
-  }
+          
         
 }
 
@@ -82,6 +108,7 @@ void connetctFootCtrl() {
             pMidiCharacteristic->registerForNotify(notifyCallback);
         } else {
             Serial.println("Failed to get MIDI characteristic!");
+            ESP.restart();
         }
     } else {
         Serial.println("Failed to get MIDI service!");
@@ -91,7 +118,7 @@ void connetctFootCtrl() {
 void setup() {
     Serial.begin(115200);
     Serial.println("Starting setup...");
-
+    mode = 0;
 
     DEBUG("Spark connecting ...");
     while (!spark_state_tracker_start()) {  // set up data to track Spark and app state, if it fails to find the Spark it will return false
