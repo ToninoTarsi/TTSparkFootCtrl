@@ -1,13 +1,11 @@
 #include <NimBLEDevice.h>
 #include "Spark.h"
 
-//#define MIDI_SERVICE_UUID         "00001803-0000-1000-8000-00805f9b34fb" // MIDI Service UUID
-//#define MIDI_CHARACTERISTIC_UUID  "00002A06-0000-1000-8000-00805f9b34fb" // MIDI Characteristic UUID
 
 #define MIDI_SERVICE_UUID         "03b80e5a-ede8-4b33-a751-6ce34ec4c700" // MIDI Service UUID
 #define MIDI_CHARACTERISTIC_UUID  "7772e5db-3868-4112-a1a9-f2669d106bf3" // MIDI Characteristic UUID
-#define MIDI_ADDRESS "08:29:78:37:7A:AD" 
-
+//#define MIDI_ADDRESS "08:29:78:37:7A:AD" 
+#define MIDI_ADDRESS "11:61:7A:B5:E5:2F"
 
 NimBLEClient* pClient;
 NimBLERemoteService* pMidiService;
@@ -37,7 +35,7 @@ void notifyCallback(NimBLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_
         int midi_chan, midi_cmd,midi_data; bool onoff;
         
         midi_cmd = pData[2] ;
-        midi_data = pData[3] ;
+        midi_data = pData[3] % 4;
          
         Serial.print("Received MIDI Message: ");     
         for (size_t i = 0; i < length; i++) {
@@ -46,12 +44,13 @@ void notifyCallback(NimBLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_
         }
         Serial.println();
 
-        if (midi_cmd == 0xC0)  {
-          mode = midi_data;
+        if (midi_cmd == 0xB0)  {
+          if (midi_data == 2) mode = 0;
+          if (midi_data == 3) mode = 1;
           Serial.print("Switch to mode : ");
           Serial.println(mode);
         }
-        else if (midi_cmd == 0xB0) {
+        else if (midi_cmd == 0xC0) {
           Serial.print("Switch to command : ");
           Serial.println(midi_data);
           if ( mode == 0) {
@@ -116,6 +115,7 @@ void connetctFootCtrl() {
 }
 
 void setup() {
+    //setCpuFrequencyMhz(80);
     Serial.begin(115200);
     Serial.println("Starting setup...");
     mode = 0;
