@@ -1,4 +1,5 @@
 #include <NimBLEDevice.h>
+#include <Arduino.h>
 #include "Spark.h"
 
 
